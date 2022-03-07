@@ -1,0 +1,9 @@
+/node_modules
+/logs
+/dist
+/database
+/configurations
+/resources
+
+TODO.md
+config.ts
