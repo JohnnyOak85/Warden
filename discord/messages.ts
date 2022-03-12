@@ -1,41 +1,103 @@
 import { Message, MessageManager } from 'discord.js';
 import { BOT_ID } from '../config';
 import { executeCommand } from '../tools/commands';
-import { DataMap, recordQuote } from '../tools/data';
 import { logError } from '../tools/logs';
-import { checkCaps, checkRepeatedWords, getReply } from '../tools/strings';
+import { getNumber } from '../tools/math';
+import { recordQuote } from '../tools/quotes';
+import { checkCaps, checkRepeatedWords, getReply, getResponse } from '../tools/strings';
+import { updateRolesChannel } from './channels';
 import { findEmbed } from './embeds';
-import { removeReaction, updateRole } from './reactions';
 
-export const findMessageByEmbed = (manager: MessageManager, title: string) => manager.cache.find((m) => !!findEmbed(m.embeds, title));
+export const findMessageByEmbed = async (manager: MessageManager, title: string) => {
+  try {
+    const list = await manager.fetch();
+    return list.find((m) => !!findEmbed(m.embeds, title));
+  } catch (error) {
+    throw error;
+  }
+};
 
-const createCollector = (message: Message, reactions: string[]) =>
-  message.createReactionCollector({
-    dispose: true,
-    filter: (reaction, u) => reaction.emoji.name !== null && reactions.includes(reaction.emoji.name)
-  });
+export const findMessageByContent = async (manager: MessageManager, content: string) => {
+  try {
+    const list = await manager.fetch();
+    return list.find((m) => m.content.includes(content));
+  } catch (error) {
+    throw error;
+  }
+};
+const reply = (message: Message) => {
+  try {
+    const reply = getReply(message.content.toLowerCase(), 'replies');
 
-const reply = (message: Message) => getReply(message.content.toLowerCase(), 'replies').then((rep) => (rep ? message.channel.send(rep) : undefined));
-const react = (message: Message) => getReply(message.content.toLowerCase(), 'reactions').then((react) => (react ? message.react(react) : undefined));
+    if (!reply) return;
 
-const filterMessages = async (manager: MessageManager, id: string) =>
-  manager.fetch({ limit: 25 }).then((list) => list.filter((message) => message.author.id === id));
+    message.channel.send(reply);
+  } catch (error) {
+    throw error;
+  }
+};
 
-const findOwnMessage = async (manager: MessageManager, reply: string, id: string) =>
-  !!filterMessages(manager, BOT_ID).then((l) => l.find((m) => m.content.includes(reply) && m.content.includes(id)));
+const react = (message: Message) => {
+  try {
+    const reaction = getReply(message.content.toLowerCase(), 'reactions');
 
-const checkRepeatedMessages = (message: Message) =>
-  filterMessages(message.channel.messages, message.author.id)
-    .then((list) => list.filter((m) => m.id !== message.id && m.content === message.content))
-    .then((list) => list.map((x) => x).length >= 3);
+    if (!reaction) return;
+
+    message.channel.send(reaction);
+  } catch (error) {
+    throw error;
+  }
+};
+
+const filterMessages = async (manager: MessageManager, id: string) => {
+  try {
+    const list = await manager.fetch({ limit: 25 });
+
+    return list.filter((message) => message.author.id === id);
+  } catch (error) {
+    throw error;
+  }
+};
+
+const findOwnMessage = async (manager: MessageManager, reply: string, id: string) => {
+  try {
+    const list = await filterMessages(manager, BOT_ID);
+
+    if (!list) return;
+
+    return !!list.find((message) => message.content.includes(reply) && message.content.includes(id));
+  } catch (error) {
+    throw error;
+  }
+};
+
+const checkRepeatedMessages = async (message: Message) => {
+  try {
+    const list = await filterMessages(message.channel.messages, message.author.id);
+
+    if (!list) return;
+
+    return list.filter((repeat) => repeat.id !== message.id && repeat.content === message.content).map((x) => x).length >= 3;
+  } catch (error) {
+    throw error;
+  }
+};
 
 const checkMessage = async (message: Message) => {
   try {
     if (message.channel.type !== 'GUILD_TEXT' || !message.content) return;
-    if (message.mentions.users.size >= 3) return 'chill with the mention train!';
-    if (checkCaps(message.content.replace(/[^\w]/g, ''))) return 'stop shouting please!';
-    if (checkRepeatedWords(message.content)) return 'is there an echo in here?';
-    if (await checkRepeatedMessages(message)) return 'we heard you the first time!';
+
+    if (message.mentions.users.size >= 3) {
+      return getResponse('mentions', 'Too many mentions.');
+    }
+
+    if (checkCaps(message.content.replace(/[^\w]/g, ''))) {
+      return getResponse('caps', 'Too many caps.');
+    }
+
+    if (checkRepeatedWords(message.content) || (await checkRepeatedMessages(message))) {
+      return getResponse('repeats', 'Too much spam');
+    }
   } catch (error) {
     throw error;
   }
@@ -70,6 +132,10 @@ export const checkIncomingMessage = async (message: Message) => {
 
     if (await illegalMessage(message)) return;
 
+    if (message.guild) {
+      updateRolesChannel(message.guild.channels, message);
+    }
+
     executeCommand(message);
   } catch (error) {
     logError(error);
@@ -83,35 +149,31 @@ export const checkMessageUpdate = (message: Message | undefined) => {
     react(message);
 
     illegalMessage(message);
+
+    if (message.guild) {
+      updateRolesChannel(message.guild.channels, message);
+    }
   } catch (error) {
     logError(error);
   }
 };
 
-export const checkQuote = async (message: Message | undefined, emoji: string, count: number) => {
+export const checkQuote = (message: Message | undefined, emoji: string, count: number) => {
   if (!message) return;
 
   try {
-    recordQuote(emoji, count, `${message.content}\n${message.member?.nickname}, ${message.createdAt.getFullYear()}`);
+    recordQuote(emoji, count, `> ${message.content}\n*${message.member?.nickname}, ${message.createdAt.getFullYear()}*`, message?.guild?.id || '');
   } catch (error) {
     logError(error);
   }
 };
 
-export const setReactionCollector = (message: Message, map: DataMap<string>, stack = false) => {
-  const collector = createCollector(message, Object.keys(map));
+export const deleteMessages = async (manager: MessageManager, amount: string) => {
+  try {
+    const list = await manager.fetch({ limit: (getNumber(amount) || 1) + 1 });
 
-  collector.on('collect', (reaction, user) => {
-    updateRole(reaction, user, map[reaction.emoji.name || '']);
-
-    if (stack) {
-      collector.collected.forEach((r) => {
-        removeReaction(r, reaction, user, map[r.emoji.name || '']);
-      });
-    }
-  });
-
-  collector.on('remove', (reaction, user) => {
-    updateRole(reaction, user, map[reaction.emoji.name || ''], true);
-  });
+    list.forEach((m) => m.delete());
+  } catch (error) {
+    throw error;
+  }
 };

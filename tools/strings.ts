@@ -1,34 +1,44 @@
-import { getMap } from './data';
-import { getDoc } from './database';
+import { getConfig, getConfigMap } from './configurations';
+import { getRandom } from './math';
 
-const cleanString = async (str: string) => {
-  const chars = await getDoc<string[]>('configurations', 'chars');
+const cleanString = (str: string) => {
+  try {
+    const chars = getConfig<string[]>('chars');
 
-  for (const char of chars) {
-    const regex = new RegExp(`\\${char}`, 'g');
+    for (const char of chars) {
+      const regex = new RegExp(`\\${char}`, 'g');
 
-    str = str.replace(regex, ' ');
+      str = str.replace(regex, ' ');
+    }
+
+    return str;
+  } catch (error) {
+    throw error;
   }
-
-  return str;
 };
 
 export const getReason = (reason: string) => (reason ? `Reason: ${reason}` : 'No reason provided');
 
-export const getReply = async (message: string, file: string) => {
-  message = await cleanString(message);
+export const getReply = (message: string, file: string) => {
+  try {
+    const clean = cleanString(message);
 
-  const map = await getMap<string>(file);
-  const words = message.split(' ');
+    message = clean ? clean : message;
 
-  for (const word of words) {
-    const specialIndex = `${word} ${words[words.indexOf(word) + 1]}`;
+    const map = getConfigMap<string>(file);
+    const words = message.split(' ');
 
-    if (map[word]) {
-      return map[word];
-    } else if (map[specialIndex]) {
-      return map[specialIndex];
+    for (const word of words) {
+      const specialIndex = `${word} ${words[words.indexOf(word) + 1]}`;
+
+      if (map[word]) {
+        return map[word];
+      } else if (map[specialIndex]) {
+        return map[specialIndex];
+      }
     }
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -60,5 +70,15 @@ export const checkRepeatedWords = (str: string) => {
 
       if (words.length > 5 && counter >= words.length / 2) return true;
     }
+  }
+};
+
+export const getResponse = (block: string, defaultResponse: string) => {
+  try {
+    const config = getConfigMap<string[]>('responses');
+
+    return config[block][getRandom(config[block].length) - 1];
+  } catch (error) {
+    return defaultResponse;
   }
 };

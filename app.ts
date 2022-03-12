@@ -7,6 +7,7 @@ import { logError } from './tools/logs';
 import { deleteEmoji, recordEmoji } from './discord/emojis';
 import { deleteRole, recordRole } from './discord/roles';
 import { checkIncomingMessage, checkMessageUpdate, checkQuote } from './discord/messages';
+import { deleteChannel, recordChannel } from './discord/channels';
 
 const bot = new Client({
   intents: [
@@ -50,6 +51,10 @@ bot.on('emojiUpdate', (emoji) => recordEmoji(emoji));
 bot.on('roleCreate', (role) => recordRole(role));
 bot.on('roleDelete', (role) => deleteRole(role));
 bot.on('roleUpdate', (role) => recordRole(role));
+
+bot.on('channelCreate', (channel) => recordChannel(channel));
+bot.on('channelDelete', (channel) => deleteChannel(channel.type === 'DM' ? undefined : channel));
+bot.on('channelUpdate', (channel) => recordChannel(channel.type === 'DM' ? undefined : channel));
 
 bot.on('guildBanAdd', (ban) => {
   recordBannedUser(ban.user, ban.reason || '', ban.guild.id);

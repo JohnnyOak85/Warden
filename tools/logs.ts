@@ -8,5 +8,5 @@ const logger = createLogger({
   transports: [new transports.File({ filename: 'logs/log.txt' })]
 });
 
-export const logError = (error: any) => logger.log('error', `${error.message}\n${error}\nTime: ${getDate()}`);
+export const logError = (error: any) => logger.log('error', JSON.stringify(error));
 export const logInfo = (message: string) => logger.log('info', `${message}\nTime: ${getDate()}`);

@@ -1,36 +1,39 @@
 import { GuildEmoji, GuildEmojiManager } from 'discord.js';
-import { getMap, recordMap } from '../tools/data';
-import { saveDoc } from '../tools/database';
+import { DataMap } from '../tools/configurations';
+import { getDoc, saveDoc } from '../tools/database';
 import { logError } from '../tools/logs';
 
-const getEmojiMap = () => getMap<string>('emojis');
-const saveEmojisMaps = (doc: any) => saveDoc(doc, 'configurations', 'emojis');
-
-export const recordEmojis = (manager: GuildEmojiManager) =>
-  recordMap(
-    manager.cache.map((emoji) => ({ [emoji.id]: emoji.name || '' })),
-    'emojis'
-  );
-
-export const recordEmoji = async (emoji: GuildEmoji) => {
+export const recordEmojis = (manager: GuildEmojiManager) => {
   try {
-    const doc = await getEmojiMap();
+    const map: DataMap<string> = {};
 
-    doc[emoji.id] = emoji.name || '';
+    manager.cache.forEach((emoji) => (map[emoji.id] = emoji.name || ''));
 
-    saveEmojisMaps(doc);
+    saveDoc(map, manager.guild.id, 'emojis');
   } catch (error) {
     logError(error);
   }
 };
 
-export const deleteEmoji = async (emoji: GuildEmoji) => {
+export const recordEmoji = (emoji: GuildEmoji) => {
   try {
-    const doc = await getEmojiMap();
+    const doc = getDoc<DataMap<string>>(emoji.guild.id, 'emojis');
+
+    doc[emoji.id] = emoji.name || '';
+
+    saveDoc(doc, emoji.guild.id, 'emojis');
+  } catch (error) {
+    logError(error);
+  }
+};
+
+export const deleteEmoji = (emoji: GuildEmoji) => {
+  try {
+    const doc = getDoc<DataMap<string>>(emoji.guild.id, 'emojis');
 
     delete doc[emoji.id];
 
-    saveEmojisMaps(doc);
+    saveDoc(doc, emoji.guild.id, 'emojis');
   } catch (error) {
     logError(error);
   }

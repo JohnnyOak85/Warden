@@ -1,12 +1,65 @@
-import { ensureDir, readdir, readJSON, writeJSON } from 'fs-extra';
-import { DATABASE_DIR } from '../config';
+import { ensureDir, ensureDirSync, readdirSync, readJSONSync, writeJSONSync } from 'fs-extra';
 
-export const ensureDatabase = (guild: string) => ensureDir(`${DATABASE_DIR}/${guild}`);
-export const getDoc = <T>(dir: string, doc: string): Promise<T> => readJSON(`${DATABASE_DIR}/${dir}/${doc}.json`);
-export const saveDoc = <T>(doc: T, dir: string, id: string) => writeJSON(`${DATABASE_DIR}/${dir}/${id}.json`, doc);
-export const docExists = (dir: string, doc: string) => listDocs(dir).then((dir) => dir.includes(doc));
-export const listDocs = (dir: string) => readdir(`${DATABASE_DIR}/${dir}`).then((d) => d.map((file) => file.replace('.json', '')));
-export const updateDoc = <T>(doc: T, dir: string, id: string) => getDoc(dir, id).then((d) => saveDoc(Object.assign(d, doc), dir, id));
-export const findDoc = <T>(dir: string, doc: string) => docExists(dir, doc).then((bool) => (bool ? getDoc<T>(dir, doc) : undefined));
+const DIR = './database';
 
-ensureDir(DATABASE_DIR);
+ensureDir(DIR);
+
+export const ensureDatabase = (dir: string) => ensureDirSync(`${DIR}/${dir}`);
+
+export const getDoc = <T>(dir: string, doc: string) => {
+  try {
+    return readJSONSync(`${DIR}/${dir}/${doc}.json`) as T;
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const saveDoc = <T>(doc: T, dir: string, id: string) => {
+  try {
+    writeJSONSync(`${DIR}/${dir}/${id}.json`, doc);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const docExists = (dir: string, doc: string) => {
+  try {
+    ensureDatabase(dir);
+
+    const docs = listDocs(dir);
+
+    if (!docs) return false;
+
+    return docs.includes(doc);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const listDocs = (dir: string) => {
+  try {
+    const docs = readdirSync(`${DIR}/${dir}`);
+
+    return docs.map((file) => file.replace('.json', ''));
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const updateDoc = <T>(doc: T, dir: string, id: string) => {
+  try {
+    saveDoc(Object.assign(getDoc<T>(dir, id), doc), dir, id);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const findDoc = <T>(dir: string, doc: string) => {
+  try {
+    if (!docExists(dir, doc)) return;
+
+    return getDoc<T>(dir, doc);
+  } catch (error) {
+    throw error;
+  }
+};

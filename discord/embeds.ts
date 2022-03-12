@@ -1,5 +1,5 @@
 import { ColorResolvable, MessageEmbed } from 'discord.js';
-import { getDoc } from '../tools/database';
+import { getConfig } from '../tools/configurations';
 
 export interface EmbedConfig {
   embed: {
@@ -18,12 +18,25 @@ interface EmbedMap {
   url?: string;
 }
 
-export const findEmbed = (embeds: MessageEmbed[], title: string) => embeds.find((embed) => embed.title === title);
-export const getEmbedConfig = () => getDoc<EmbedConfig[]>('', 'roles_config');
-export const buildEmbed = (embed: EmbedMap) =>
-  new MessageEmbed()
-    .setColor(embed.color || 'DEFAULT')
-    .setDescription(embed.description || '')
-    .setTitle(embed.title || '')
-    .setThumbnail(embed.thumb || '')
-    .setURL(embed.url || '');
+export const findEmbed = (embeds: MessageEmbed[], title: string) => embeds.find((embed) => embed.title?.includes(title));
+
+export const getEmbedConfig = () => {
+  try {
+    return getConfig<EmbedConfig[]>('embeds');
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const buildEmbed = (embed: EmbedMap) => {
+  try {
+    return new MessageEmbed()
+      .setColor(embed.color || 'DEFAULT')
+      .setDescription(embed.description || '')
+      .setTitle(embed.title || '')
+      .setThumbnail(embed.thumb || '')
+      .setURL(embed.url || '');
+  } catch (error) {
+    throw error;
+  }
+};

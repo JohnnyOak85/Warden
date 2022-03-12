@@ -1,5 +1,6 @@
 import { GuildBanManager, User } from 'discord.js';
 import { docExists, saveDoc } from '../tools/database';
+import { logError } from '../tools/logs';
 import { getReason } from '../tools/strings';
 
 const buildBannedUser = (user: User, reason: string) => {
@@ -14,8 +15,23 @@ const buildBannedUser = (user: User, reason: string) => {
   };
 };
 
-export const recordBannedUser = (user: User, reason: string, guild: string) =>
-  docExists(guild, user.id).then((bool) => (bool ? saveDoc(buildBannedUser(user, getReason(reason)), guild, user.id) : null));
+export const recordBannedUser = (user: User, reason: string, guild: string) => {
+  try {
+    if (!docExists(guild, user.id)) {
+      logError(`${user.id} does not exist on ${guild}`);
+      return;
+    }
 
-export const recordBannedUsers = (manager: GuildBanManager) =>
-  manager.cache.forEach((ban) => recordBannedUser(ban.user, ban.reason || 'No reason provided', ban.guild.id));
+    saveDoc(buildBannedUser(user, getReason(reason)), guild, user.id);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const recordBannedUsers = (manager: GuildBanManager) => {
+  try {
+    manager.cache.forEach((ban) => recordBannedUser(ban.user, ban.reason || 'No reason provided', ban.guild.id));
+  } catch (error) {
+    logError(error);
+  }
+};

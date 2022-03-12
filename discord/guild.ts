@@ -1,7 +1,7 @@
 import { GuildManager } from 'discord.js';
 import { setCommands } from '../tools/commands';
 import { ensureDatabase } from '../tools/database';
-import { logError } from '../tools/logs';
+import { logError, logInfo } from '../tools/logs';
 import { startTimers } from '../tools/time';
 import { recordBannedUsers } from './bans';
 import { recordChannels, setRolesChannel } from './channels';
@@ -21,6 +21,8 @@ export const startGuild = (manager: GuildManager) => {
       recordMembers(guild.members);
       setRolesChannel(guild.channels);
       startTimers(guild);
+      logInfo('Bot is online!');
+      console.log('ONLINE')
     } catch (error) {
       logError(error);
     }
