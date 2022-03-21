@@ -12,7 +12,7 @@ module.exports = {
     const moderator = message.member?.permissions.has('MANAGE_MESSAGES') || false;
 
     if (!moderator) {
-      getResponse('unauthorized', 'You do not have permission for this command.');
+      message.channel.send(getResponse('unauthorized', 'You do not have permission for this command.'));
       return;
     }
 
