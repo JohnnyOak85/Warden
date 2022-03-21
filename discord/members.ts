@@ -174,3 +174,17 @@ export const unbanUser = async (manager: GuildMemberManager, user: User) => {
     throw error;
   }
 };
+
+export const kickUser = (member: GuildMember, reason: string) => {
+  try {
+    const user = getUser(member);
+
+    user.removed = true;
+    user.strikes = user.strikes || [];
+    user.strikes.push(reason);
+
+    saveDoc(user, member.guild.id, member.id);
+  } catch (error) {
+    throw error;
+  }
+};
