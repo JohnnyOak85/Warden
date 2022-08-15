@@ -1,43 +1,26 @@
 import PouchDB from 'pouchdb';
 import { DB_ADDRESS } from '../config';
-import { Dictionary } from '../interfaces';
+import { Member, StoredMember } from '../interfaces';
 
-const db = new PouchDB(`${DB_ADDRESS}/artemis`);
+const db = new PouchDB(`${DB_ADDRESS}/members`);
 
-export const getAllDocs = async <T>() => {
-    try {
-        const list = await db.allDocs<T>({ include_docs: true });
+const cleanDoc = (doc: StoredMember): Member => ({
+    id: doc._id,
+    infractions: doc.infractions,
+    strikes: doc.strikes
+});
 
-        return list.rows.map(row => row.doc).filter(doc => doc);
-    } catch (error) {
-        throw error;
-    }
-};
+const getDocs = async () => await db.allDocs<Member>({ include_docs: true });
+const parseDocs = async () => (await getDocs()).rows.map(row => row.doc).filter(doc => doc);
+export const getMemberList = async () =>
+    (await parseDocs())
+        .map(doc => {
+            if (doc) {
+                return cleanDoc(doc);
+            }
+        })
+        .filter(doc => doc);
 
-export const getDoc = async <T>(id: string) => {
-    const doc = await db.get<T>(id);
-    const clone = JSON.parse(JSON.stringify(doc));
-
-    delete clone._id;
-    delete clone._rev;
-
-    return clone as T;
-};
-
-export const saveDoc = async <T>(docId: string, map: T) => {
-    const doc = await db.get<T>(docId);
-
-    db.put(Object.assign(doc, map));
-};
-
-export const appendDocList = async (docId: string, entry: string) => {
-    try {
-        const doc = await db.get<Dictionary<string[]>>(docId);
-
-        doc[docId].push(entry);
-
-        db.put(doc);
-    } catch (error) {
-        throw error;
-    }
-};
+export const getMember = async (id: string) => cleanDoc(await db.get<Member>(id));
+export const saveMember = async (id: string, member: Member) =>
+    db.put(Object.assign(await db.get(id), member));

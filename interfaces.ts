@@ -1,5 +1,7 @@
 import { GuildMember, Message } from 'discord.js';
 
+export type StoredMember = PouchDB.Core.ExistingDocument<Member & PouchDB.Core.AllDocsMeta>;
+
 export interface Dictionary<T> {
     [x: string]: T;
 }
@@ -17,14 +19,12 @@ export interface Strikes {
 }
 
 export interface Member {
+    id?: string;
     infractions?: Dictionary<number>;
     strikes?: {
         counter: number;
         timeout: number;
     };
-    // anniversary: MM-DD
-    // nickname: string
-    // roles: string[]
 }
 
 export interface Command {

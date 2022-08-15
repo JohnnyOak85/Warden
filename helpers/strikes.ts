@@ -1,7 +1,7 @@
 import { Collector } from '../storage/collection';
 import { Member, Strikes } from '../interfaces';
 import { logError } from '../tools/logs';
-import { saveDoc } from '../storage/database';
+import { saveMember } from '../storage/database';
 import { getTimer } from '../tools/time';
 
 const strikes = new Collector<Strikes>();
@@ -26,7 +26,7 @@ const cleanStrike = async (id: string) => {
             entry.timeout = getTimer(id, cleanStrike, timeout);
         }
 
-        saveDoc<Member>(id, {
+        saveMember(id, {
             strikes: { counter: entry.counter, timeout: entry.counter ? timeout : 0 }
         });
     } catch (error) {
@@ -35,17 +35,17 @@ const cleanStrike = async (id: string) => {
 };
 
 export const addStrike = async (id: string) => {
-    const memberStrikes = getStrikes(id);
+    const entry = getStrikes(id);
     const timeout = getTimeout();
 
-    if (memberStrikes.counter === 0) {
-        memberStrikes.timeout = getTimer(id, cleanStrike, timeout);
-        strikes.addItem(id, memberStrikes);
+    if (entry.counter === 0) {
+        entry.timeout = getTimer(id, cleanStrike, timeout);
+        strikes.addItem(id, entry);
     }
 
-    memberStrikes.counter += 1;
+    entry.counter += 1;
 
-    saveDoc(id, { strikes: memberStrikes });
+    saveMember(id, { strikes: { counter: entry.counter, timeout } });
 };
 
 export const setStrikes = async (memberId: string, member: Member) => {

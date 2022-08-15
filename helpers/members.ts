@@ -1,7 +1,7 @@
 import { MessageMentions } from 'discord.js';
 import { BOT_ID } from '../config';
-import { Action, Member } from '../interfaces';
-import { getAllDocs } from '../storage/database';
+import { Action } from '../interfaces';
+import { getMemberList } from '../storage/database';
 import { setInfractions } from './infractions';
 import { setStrikes } from './strikes';
 
@@ -38,12 +38,12 @@ export const iterateMembers = (
 
 export const setMembers = async () => {
     try {
-        const docs = await getAllDocs<Member>();
+        const docs = await getMemberList();
 
         for (const doc of docs) {
-            if (doc) {
-                setInfractions(doc._id, doc);
-                setStrikes(doc._id, doc);
+            if (doc && doc.id) {
+                setInfractions(doc.id, doc);
+                setStrikes(doc.id, doc);
             }
         }
     } catch (error) {

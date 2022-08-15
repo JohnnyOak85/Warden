@@ -1,7 +1,7 @@
 import { Collector } from '../storage/collection';
 import { Dictionary, Member, TimerMap } from '../interfaces';
 import { logError } from '../tools/logs';
-import { saveDoc, getDoc } from '../storage/database';
+import { saveMember, getMember } from '../storage/database';
 import { getTimer } from '../tools/time';
 
 const infractions = new Collector<TimerMap>();
@@ -18,11 +18,11 @@ const cleanInfraction = async (id: string, id2 = '') => {
         clearTimeout(entry[id2]);
         delete entry[id2];
 
-        const memberDoc = await getDoc<Member>(id);
+        const memberDoc = await getMember(id);
 
         if (memberDoc.infractions) {
             delete memberDoc.infractions[id2];
-            saveDoc(id, memberDoc);
+            saveMember(id, memberDoc);
         }
     } catch (error) {
         logError(error);
@@ -31,11 +31,11 @@ const cleanInfraction = async (id: string, id2 = '') => {
 
 const saveInfractions = async (id: string, infraction: Dictionary<number>) => {
     try {
-        const doc = await getDoc<Member>(id);
+        const doc = await getMember(id);
 
         doc.infractions = Object.assign(doc.infractions || {}, infraction);
 
-        saveDoc(id, doc);
+        saveMember(id, doc);
     } catch (error) {
         throw error;
     }
