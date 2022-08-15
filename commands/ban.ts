@@ -1,17 +1,16 @@
 import { Message } from 'discord.js';
-import { kickMember } from '../helpers/punishment';
+import { banMember } from '../helpers/punishment';
 import { iterateMembers } from '../helpers/members';
-import { logError } from '../tools/logs';
 
 module.exports = {
-    name: 'kick',
-    description: 'Removes a user from the guild.',
-    usage: '<user> <reason>',
+    name: 'ban',
+    description: 'Bans a user from the guild, can be temporary',
+    usage: '<user> <reason> <time in days>',
     execute: async (message: Message, args: string[]) => {
         if (!message.mentions.members?.size) return;
 
-        if (!message.member?.permissions.has('KickMembers')) {
-            message.channel.send('You do not have permission to kick members');
+        if (!message.member?.permissions.has('BanMembers')) {
+            message.channel.send('You do not have permission to ban members.');
             return;
         }
 
@@ -20,13 +19,13 @@ module.exports = {
                 message.mentions,
                 message.member.user.id,
                 args.filter(arg => !arg.includes('<@')).join(' '),
-                'Stop kicking yourself!',
-                kickMember
+                'You cannot ban yourself!',
+                banMember
             );
 
             message.channel.send(reply);
         } catch (error) {
-            logError(error);
+            throw error;
         }
     }
 };

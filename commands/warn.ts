@@ -1,17 +1,17 @@
 import { Message } from 'discord.js';
-import { kickMember } from '../helpers/punishment';
+import { warnMember } from '../helpers/punishment';
 import { iterateMembers } from '../helpers/members';
 import { logError } from '../tools/logs';
 
 module.exports = {
-    name: 'kick',
-    description: 'Removes a user from the guild.',
+    name: 'warn',
+    description: 'Adds an infraction to a user.',
     usage: '<user> <reason>',
     execute: async (message: Message, args: string[]) => {
         if (!message.mentions.members?.size) return;
 
-        if (!message.member?.permissions.has('KickMembers')) {
-            message.channel.send('You do not have permission to kick members');
+        if (!message.member?.permissions.has('ModerateMembers')) {
+            message.channel.send('You do not have permission to warn members');
             return;
         }
 
@@ -20,8 +20,8 @@ module.exports = {
                 message.mentions,
                 message.member.user.id,
                 args.filter(arg => !arg.includes('<@')).join(' '),
-                'Stop kicking yourself!',
-                kickMember
+                'PLACHOLDER',
+                warnMember
             );
 
             message.channel.send(reply);
