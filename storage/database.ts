@@ -12,6 +12,7 @@ const cleanDoc = (doc: StoredMember): Member => ({
 
 const getDocs = async () => await db.allDocs<Member>({ include_docs: true });
 const parseDocs = async () => (await getDocs()).rows.map(row => row.doc).filter(doc => doc);
+
 export const getMemberList = async () =>
     (await parseDocs())
         .map(doc => {
@@ -24,3 +25,5 @@ export const getMemberList = async () =>
 export const getMember = async (id: string) => cleanDoc(await db.get<Member>(id));
 export const saveMember = async (id: string, member: Member) =>
     db.put(Object.assign(await db.get(id), member));
+
+export const startDatabase = () => db.info();
